@@ -164,3 +164,80 @@
 		○ }
 		○ 
 		
+
+
+//演奏モード Main flow
+//0->ヒトリデ, 1->ミンナデ
+void perform(unsigned char mode)
+{
+ 	//宣言と初期化
+ 	double dist;//距離測定からもらった距離
+ 	int doremi;
+ 	int octave;
+ 	enum State state;//state : 0 Play, 1 Standby, 2 Record.
+ 	state = PLAY;
+ 	int sw_array[5][2];//5ボタンの新旧を保持スイッチ
+ 	init_sw_array(sw_array);//スイッチ配列初期化
+ 	char sound_data[1024];//音源データ
+ 	char array_idx = 6;
+
+ 	while(1){ 
+	//距離読んで、音鳴らして、LCD・LED表示するルーチン
+	dist = cal_distance();
+	doremi = dist2doremi(mode,dist);
+	sound(doremi, octave);//音鳴す
+	lcd_string = gen_lcd_string(mode, state, doremi, octave, dist);//LCD入力文字列生成
+	lcd_display(lcd_string);//show LCD文字列 
+
+	if (state == PLAY || state == RECORD)
+ 		rgb = doremi2rgb(doremi);
+	else if (ELAPSED_TIME % 500 == 0)//fullcolor led 点滅 rgb_value
+	 	rgb ^= 0xff0000
+	
+	color_led(rgb);//show color to led
+
+	//ボタントリガの処理ルーチン
+
+	get_switch(sw_array);//スイッチ入力を読み取る
+	if (sw_array[2][0] > sw_array[2][1])  //戻るボタン
+ 		{
+ 			if (state == PLAY){
+				stop_buzzer();
+ 				return;
+ 			}
+ 		}else if (state == STANDBY)
+ 			state = PLAY;
+		else
+		{
+ 			state = PLAY;
+			finish_rec(sound_data, idx, number, rec_time, addr);
+		}
+	if (sw_array[1][0] > sw_array[1][1]) && state == PLAY  //録音ボタン
+ 		state = STANDBY
+ 		ELAPSED_TIME = 0  (10ms単位)
+ 		rgb = 0x000000
+	if (sw_array[3][0] > sw_array[3][1]) && state != STANDBY  //上ボタン
+ 	if octave < 7
+	 	octave++
+	if (sw_array[4][0] > sw_array[4][1]) && state != STANDBY  //下ボタン
+ 	if octave > 0
+		octave--
+	//状態管理の処理ルーチン
+	if state == STANDBY
+ 	if ELAPSED_TIME > 300 (3000ms)
+		state = RECORD
+		ELAPSED_TIME = 0
+	else if state == RECORD
+ 		DURATION = 0
+ 		record(doremi, octave, sound_data, idx)
+ 	if ELAPSED_TIME > 1000 (10,000ms 仮です)
+		state = FINE
+		ELAPSED_TIME = 0
+		rgb = 0x000000
+	else if state == FINE
+ 		record(doremi, octave, sound_data, idx)
+ 	if ELAPSED_TIME > 3000
+		state = PLAY
+		finish_rec(sound_data, idx, number, rec_time, addr)
+}
+
